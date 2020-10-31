@@ -11,6 +11,8 @@
 from time import sleep
 import logging
 import uuid
+import os
+from datetime import datetime as dt
 
 import numpy as np
 import pylsl as lsl
@@ -41,12 +43,28 @@ class Pupil_LSL_Relay(Plugin):
         logger.debug("Time after synchronization: {}".format(debug_ts_after))
         logger.debug("LabStreamingLayer time: {}".format(debug_ts_lsl))
 
+        self.frame_id = 0
+        self.rec_dir = rf"D:\temp\{dt.now().strftime('%Y-%m-%d %H.%M.%S')}"
+        try:
+            os.makedirs(self.rec_dir)
+        except OSError:
+            pass
+
         self.outlet_uuid = outlet_uuid or str(uuid.uuid4())
         self.outlet = self.construct_outlet()
+        self.outlet_video_uuid = str(uuid.uuid4())
+        self.outlet_video = self.construct_outlet_video()
 
     def recent_events(self, events):
         for gaze in events.get("gaze", ()):
             self.push_gaze_sample(gaze)
+        frame = events.get("frame", None)
+        if frame is not None:
+            self.frame_id += 1
+            frame_fn = f"{self.frame_id}.jpg"
+            with open(os.path.join(self.rec_dir, frame_fn), "wb") as f:
+                f.write(frame.jpeg_buffer)
+            self.outlet_video.push_sample([self.frame_id])
 
     def push_gaze_sample(self, gaze):
         try:
@@ -88,6 +106,18 @@ class Pupil_LSL_Relay(Plugin):
     def construct_outlet(self):
         self.setup_channels()
         stream_info = self.construct_streaminfo()
+        return lsl.StreamOutlet(stream_info)
+
+    def construct_outlet_video(self):
+        stream_info = lsl.StreamInfo(
+            name="pupil_capture_video",
+            type="videostream",
+            channel_count=1,
+            channel_format=lsl.cf_int32,
+            source_id=self.outlet_video_uuid,
+        )
+        stream_info.desc().append_child_value("pupil_lsl_relay_version", VERSION)
+        stream_info.desc().append_child_value("video_path", self.rec_dir)
         return lsl.StreamOutlet(stream_info)
 
     def construct_streaminfo(self):
