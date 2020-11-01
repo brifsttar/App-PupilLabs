@@ -1,2 +1,9 @@
 -r requirements_custom.txt
 -e .
+
+setuptools~=47.1.1
+pyxdf~=1.16.3
+numpy~=1.17.4
+Pillow~=7.2.0
+pylsl~=1.12.2
+ffmpeg-python~=0.2.0
