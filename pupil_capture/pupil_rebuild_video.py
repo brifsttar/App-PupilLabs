@@ -10,6 +10,11 @@ GAZE_CIRCLE_WIDTH = 2
 
 
 def pupil_rebuild_video(xdf_file: str, draw_gaze: bool = True) -> None:
+    """
+    Rebuilds the Pupil world video from the given XDF file (if the file contains data from the Pupil Capture LSL relay).
+    @param xdf_file: Path to the XDF file.
+    @param draw_gaze: Whether to draw marker for gaze data (if gaze data is available). Defaults to True.
+    """
     g = GAZE_CIRCLE_RADIUS
     xdf_dir = os.path.dirname(xdf_file)
     data, header = pyxdf.load_xdf(xdf_file)
